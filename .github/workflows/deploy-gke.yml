@@ -1,0 +1,94 @@
+name: Deploy to GKE
+
+on:
+  workflow_dispatch:
+    inputs:
+      cluster_name:
+        description: 'GKE cluster name'
+        required: true
+        default: 'roundtrip-cluster'
+      region:
+        description: 'GCP region (zone for zonal cluster)'
+        required: true
+        default: 'us-central1-a'
+      project_id:
+        description: 'GCP project ID'
+        required: true
+
+env:
+  AR_REPO: roundtrip
+  AR_LOCATION: us-central1
+
+# OIDC / Workload Identity Federation — NO service account JSON keys.
+# One-time setup:
+#   1. Create a Workload Identity Pool + Provider for GitHub Actions
+#   2. Grant the pool's principal roles/artifactregistry.writer + roles/container.developer
+#   3. Set the secrets below in the repo settings
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Build, tag, and push images
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          REGISTRY="${{ env.AR_LOCATION }}-docker.pkg.dev/${{ inputs.project_id }}/${{ env.AR_REPO }}"
+
+          for svc in gateway orders-service processing-service; do
+            VERSION=$(node -p "require('./${svc}/package.json').version")
+            docker build -t ${REGISTRY}/${svc}:sha-${SHA} -t ${REGISTRY}/${svc}:${VERSION} -f ${svc}/Dockerfile .
+            docker push ${REGISTRY}/${svc}:sha-${SHA}
+            docker push ${REGISTRY}/${svc}:${VERSION}
+          done
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ inputs.cluster_name }}
+          location: ${{ inputs.region }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy with Helm
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          REGISTRY="${{ env.AR_LOCATION }}-docker.pkg.dev/${{ inputs.project_id }}/${{ env.AR_REPO }}"
+
+          helm repo add nats https://nats-io.github.io/k8s/helm/charts/ || true
+          helm repo update
+          helm dependency build charts/roundtrip
+
+          helm upgrade --install roundtrip charts/roundtrip \
+            -f charts/roundtrip/values-gke.yaml \
+            --set global.image.registry=${REGISTRY} \
+            --set global.image.tag=sha-${SHA} \
+            --wait --timeout 300s

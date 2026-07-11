@@ -1,0 +1,19 @@
+{
+  "name": "gcp-kubernetes-roundtrip",
+  "private": true,
+  "workspaces": [
+    "proto",
+    "orders-service",
+    "processing-service",
+    "gateway"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm test --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: processing-service
+description: JetStream consumer + DLQ handler
+version: 1.0.0
+type: application

@@ -1,0 +1,26 @@
+apiVersion: v2
+name: roundtrip
+description: Umbrella chart for gcp-kubernetes-roundtrip — event-driven microservices on Kubernetes
+version: 1.0.0
+type: application
+
+dependencies:
+  - name: postgres
+    version: "1.0.0"
+    condition: postgres.enabled
+  - name: nats
+    version: "1.2.x"
+    repository: "https://nats-io.github.io/k8s/helm/charts/"
+    condition: nats.enabled
+  - name: orders-service
+    version: "1.0.0"
+    condition: orders-service.enabled
+  - name: processing-service
+    version: "1.0.0"
+    condition: processing-service.enabled
+  - name: gateway
+    version: "1.0.0"
+    condition: gateway.enabled
+  - name: monitoring
+    version: "1.0.0"
+    condition: monitoring.enabled

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: gateway
+description: GraphQL gateway service
+version: 1.0.0
+type: application

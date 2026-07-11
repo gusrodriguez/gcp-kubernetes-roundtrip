@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-dashboard
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: roundtrip
+data:
+  roundtrip.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "title": "Orders Submitted (rate)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "rate(orders_total{status=\"pending\"}[1m])",
+              "legendFormat": "submitted/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "ops" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "Orders Processed (rate)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "rate(orders_total{status=\"processed\"}[1m])",
+              "legendFormat": "processed/min",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "ops" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "Processing Latency (p95)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, rate(processing_duration_seconds_bucket[5m]))",
+              "legendFormat": "p95",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "s" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "DLQ Messages",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 8, "x": 0, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "dlq_messages_total",
+              "legendFormat": "total",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } },
+            "overrides": []
+          }
+        },
+        {
+          "title": "gRPC Request Rate",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "rate(grpc_requests_total[1m])",
+              "legendFormat": "{{`{{method}}`}} {{`{{status}}`}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "ops" },
+            "overrides": []
+          }
+        },
+        {
+          "title": "GraphQL Request Rate",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "rate(graphql_requests_total[1m])",
+              "legendFormat": "{{`{{operation}}`}} {{`{{status}}`}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "ops" },
+            "overrides": []
+          }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["roundtrip"],
+      "templating": { "list": [] },
+      "time": { "from": "now-15m", "to": "now" },
+      "title": "Roundtrip - Order Pipeline",
+      "uid": "roundtrip-orders"
+    }

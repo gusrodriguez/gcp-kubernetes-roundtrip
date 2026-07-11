@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package orders;
+
+service OrderService {
+  rpc Submit (SubmitOrderRequest) returns (SubmitOrderResponse);
+  rpc Get (GetOrderRequest) returns (Order);
+  rpc List (ListOrdersRequest) returns (ListOrdersResponse);
+}
+
+message SubmitOrderRequest {
+  string customer_email = 1;
+  string item = 2;
+  int32 quantity = 3;
+}
+
+message SubmitOrderResponse {
+  string order_id = 1;
+  string correlation_id = 2;
+  string status = 3;
+}
+
+message GetOrderRequest {
+  string order_id = 1;
+}
+
+message ListOrdersRequest {
+  int32 limit = 1;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+}
+
+message Order {
+  string order_id = 1;
+  string correlation_id = 2;
+  string customer_email = 3;
+  string item = 4;
+  int32 quantity = 5;
+  string status = 6;
+  string created_at = 7;
+  string processed_at = 8;
+}

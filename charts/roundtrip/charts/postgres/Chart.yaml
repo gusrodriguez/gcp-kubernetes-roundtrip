@@ -1,0 +1,5 @@
+apiVersion: v2
+name: postgres
+description: Postgres StatefulSet for roundtrip
+version: 1.0.0
+type: application

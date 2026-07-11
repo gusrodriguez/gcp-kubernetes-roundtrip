@@ -1,0 +1,3 @@
+image: postgres:16-alpine
+password: roundtrip
+storage: 1Gi

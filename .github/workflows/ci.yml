@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  KIND_CLUSTER: roundtrip-ci
+
+jobs:
+  # Detect which services changed to avoid unnecessary builds
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      proto: ${{ steps.filter.outputs.proto }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+      orders-service: ${{ steps.filter.outputs.orders-service }}
+      processing-service: ${{ steps.filter.outputs.processing-service }}
+      any-service: ${{ steps.filter.outputs.gateway == 'true' || steps.filter.outputs.orders-service == 'true' || steps.filter.outputs.processing-service == 'true' || steps.filter.outputs.proto == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            proto:
+              - 'proto/**'
+              - 'tsconfig.base.json'
+            gateway:
+              - 'gateway/**'
+              - 'proto/**'
+              - 'tsconfig.base.json'
+            orders-service:
+              - 'orders-service/**'
+              - 'proto/**'
+              - 'tsconfig.base.json'
+            processing-service:
+              - 'processing-service/**'
+              - 'tsconfig.base.json'
+
+  build:
+    needs: changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: gateway
+            changed: ${{ needs.changes.outputs.gateway }}
+          - name: orders-service
+            changed: ${{ needs.changes.outputs.orders-service }}
+          - name: processing-service
+            changed: ${{ needs.changes.outputs.processing-service }}
+    steps:
+      - uses: actions/checkout@v4
+        if: matrix.service.changed == 'true'
+
+      - uses: actions/setup-node@v4
+        if: matrix.service.changed == 'true'
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: matrix.service.changed == 'true'
+        run: npm ci
+
+      - name: Typecheck
+        if: matrix.service.changed == 'true'
+        run: npm run typecheck --workspace=@gcp-k8s-roundtrip/${{ matrix.service.name }}
+
+      - name: Test
+        if: matrix.service.changed == 'true'
+        run: |
+          npm run build --workspace=@gcp-k8s-roundtrip/${{ matrix.service.name }}
+          npm test --workspace=@gcp-k8s-roundtrip/${{ matrix.service.name }} --if-present
+
+      - name: Docker build
+        if: matrix.service.changed == 'true'
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          docker build -t ${{ matrix.service.name }}:sha-${SHA} -f ${{ matrix.service.name }}/Dockerfile .
+
+  e2e:
+    needs: [changes, build]
+    if: needs.changes.outputs.any-service == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all TypeScript
+        run: npm run build
+
+      - name: Build Docker images
+        run: make build
+
+      - name: Install kind
+        uses: helm/kind-action@v1
+        with:
+          install_only: true
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Create kind cluster and deploy
+        run: make kind-up
+
+      - name: Run e2e tests
+        run: make e2e
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Pod status ==="
+          kubectl get pods -o wide
+          echo "=== Gateway logs ==="
+          kubectl logs -l app=gateway --tail=50 || true
+          echo "=== Orders-service logs ==="
+          kubectl logs -l app=orders-service --tail=50 || true
+          echo "=== Processing-service logs ==="
+          kubectl logs -l app=processing-service --tail=50 || true
+
+      - name: Cleanup
+        if: always()
+        run: make kind-down

@@ -1,0 +1,6 @@
+image:
+  repository: orders-service
+replicaCount: 1
+grpcPort: 50051
+metricsPort: 9090
+env: {}

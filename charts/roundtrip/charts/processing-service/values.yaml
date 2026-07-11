@@ -1,0 +1,5 @@
+image:
+  repository: processing-service
+replicaCount: 1
+metricsPort: 9091
+env: {}

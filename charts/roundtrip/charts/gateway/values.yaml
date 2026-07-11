@@ -1,0 +1,7 @@
+image:
+  repository: gateway
+replicaCount: 1
+port: 4000
+metricsPort: 9092
+serviceType: LoadBalancer
+env: {}

@@ -1,0 +1,67 @@
+global:
+  image:
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  password: roundtrip
+  storage: 1Gi
+
+nats:
+  enabled: true
+  config:
+    jetstream:
+      enabled: true
+      fileStore:
+        pvc:
+          size: 1Gi
+
+orders-service:
+  enabled: true
+  image:
+    repository: orders-service
+  replicaCount: 1
+  grpcPort: 50051
+  metricsPort: 9090
+  env:
+    PGHOST: roundtrip-postgres
+    PGPORT: "5432"
+    PGDATABASE: roundtrip
+    PGUSER: roundtrip
+    PGPASSWORD: roundtrip
+    NATS_URL: "nats://roundtrip-nats:4222"
+    GRPC_PORT: "50051"
+    METRICS_PORT: "9090"
+
+processing-service:
+  enabled: true
+  image:
+    repository: processing-service
+  replicaCount: 1
+  metricsPort: 9091
+  env:
+    PGHOST: roundtrip-postgres
+    PGPORT: "5432"
+    PGDATABASE: roundtrip
+    PGUSER: roundtrip
+    PGPASSWORD: roundtrip
+    NATS_URL: "nats://roundtrip-nats:4222"
+    METRICS_PORT: "9091"
+
+gateway:
+  enabled: true
+  image:
+    repository: gateway
+  replicaCount: 1
+  port: 4000
+  metricsPort: 9092
+  serviceType: LoadBalancer
+  env:
+    ORDERS_SERVICE_URL: "roundtrip-orders-service:50051"
+    PORT: "4000"
+    METRICS_PORT: "9092"
+
+monitoring:
+  enabled: true

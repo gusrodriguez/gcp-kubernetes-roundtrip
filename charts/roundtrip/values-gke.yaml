@@ -1,0 +1,16 @@
+global:
+  image:
+    # Override with: --set global.image.registry=<region>-docker.pkg.dev/<project>/<repo>
+    registry: ""
+    pullPolicy: Always
+
+gateway:
+  serviceType: LoadBalancer
+
+nats:
+  config:
+    jetstream:
+      enabled: true
+      fileStore:
+        pvc:
+          size: 1Gi
