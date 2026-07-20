@@ -1,6 +1,7 @@
 {
   "name": "gcp-kubernetes-roundtrip",
   "private": true,
+  "packageManager": "yarn@4.17.0",
   "workspaces": [
     "proto",
     "orders-service",
@@ -8,10 +9,10 @@
     "gateway"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "typecheck": "npm run typecheck --workspaces",
-    "test": "npm test --workspaces --if-present",
-    "clean": "npm run clean --workspaces --if-present"
+    "build": "yarn workspaces foreach -A run build",
+    "typecheck": "yarn workspaces foreach -A run typecheck",
+    "test": "yarn workspaces foreach -A run test",
+    "clean": "yarn workspaces foreach -A run clean"
   },
   "engines": {
     "node": ">=20"

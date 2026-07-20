@@ -14,19 +14,19 @@ help: ## Show this help
 
 .PHONY: install
 install: ## Install all dependencies
-	npm ci
+	yarn install --immutable
 
 .PHONY: build-ts
 build-ts: ## Compile all TypeScript
-	npm run build
+	yarn build
 
 .PHONY: typecheck
 typecheck: ## Typecheck all workspaces
-	npm run typecheck
+	yarn typecheck
 
 .PHONY: test
 test: ## Run unit tests
-	npm test
+	yarn test
 
 .PHONY: build
 build: ## Build all Docker images tagged with git SHA
@@ -66,4 +66,4 @@ kind-down: ## Delete the kind cluster
 
 .PHONY: clean
 clean: ## Remove build artifacts
-	npm run clean
+	yarn clean

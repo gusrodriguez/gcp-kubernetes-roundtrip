@@ -103,12 +103,12 @@ Path filters detect which services changed: touch only `gateway/` and only gatew
 
 ## Run locally
 
-Prerequisites: Docker, kind, kubectl, Helm, Node 20, npm.
+Prerequisites: Docker, kind, kubectl, Helm, Node 20, Yarn.
 
 ```bash
 # Install dependencies and build
-npm ci
-npm run build
+yarn install
+yarn build
 
 # Build Docker images
 make build
@@ -131,7 +131,7 @@ make kind-down
 
    ```bash
    cd infra
-   npm install
+   yarn install
    pulumi up
    ```
 

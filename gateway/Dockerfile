@@ -1,30 +1,36 @@
 # --- Build stage ---
 FROM node:20-alpine AS build
+RUN corepack enable
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json yarn.lock .yarnrc.yml ./
 COPY proto/package.json proto/
 COPY gateway/package.json gateway/
+COPY orders-service/package.json orders-service/
+COPY processing-service/package.json processing-service/
 
-RUN npm ci --workspace=@gcp-k8s-roundtrip/proto --workspace=@gcp-k8s-roundtrip/gateway
+RUN yarn install --immutable
 
 COPY tsconfig.base.json ./
 COPY proto/ proto/
 COPY gateway/ gateway/
 
-RUN npm run build --workspace=@gcp-k8s-roundtrip/proto && \
-    npm run build --workspace=@gcp-k8s-roundtrip/gateway
+RUN yarn workspace @gcp-k8s-roundtrip/proto build && \
+    yarn workspace @gcp-k8s-roundtrip/gateway build
 
 # --- Runtime stage ---
 FROM node:20-alpine AS runtime
+RUN corepack enable
 RUN addgroup -g 1001 -S appgroup && adduser -u 1001 -S appuser -G appgroup
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json yarn.lock .yarnrc.yml ./
 COPY proto/package.json proto/
 COPY gateway/package.json gateway/
+COPY orders-service/package.json orders-service/
+COPY processing-service/package.json processing-service/
 
-RUN npm ci --workspace=@gcp-k8s-roundtrip/proto --workspace=@gcp-k8s-roundtrip/gateway --omit=dev
+RUN yarn workspaces focus @gcp-k8s-roundtrip/proto @gcp-k8s-roundtrip/gateway --production
 
 COPY --from=build /app/proto/dist proto/dist/
 COPY --from=build /app/proto/order.proto proto/

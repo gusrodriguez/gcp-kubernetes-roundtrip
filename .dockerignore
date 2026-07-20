@@ -10,3 +10,4 @@ charts/
 scripts/
 .vscode/
 .idea/
+.yarn/

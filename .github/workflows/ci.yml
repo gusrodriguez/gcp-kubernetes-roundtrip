@@ -60,21 +60,24 @@ jobs:
         if: matrix.service.changed == 'true'
         with:
           node-version: 20
-          cache: npm
+
+      - name: Enable Corepack
+        if: matrix.service.changed == 'true'
+        run: corepack enable
 
       - name: Install dependencies
         if: matrix.service.changed == 'true'
-        run: npm ci
+        run: yarn install --immutable
 
       - name: Typecheck
         if: matrix.service.changed == 'true'
-        run: npm run typecheck --workspace=@gcp-k8s-roundtrip/${{ matrix.service.name }}
+        run: yarn workspace @gcp-k8s-roundtrip/${{ matrix.service.name }} typecheck
 
       - name: Test
         if: matrix.service.changed == 'true'
         run: |
-          npm run build --workspace=@gcp-k8s-roundtrip/${{ matrix.service.name }}
-          npm test --workspace=@gcp-k8s-roundtrip/${{ matrix.service.name }} --if-present
+          yarn workspace @gcp-k8s-roundtrip/${{ matrix.service.name }} build
+          yarn workspace @gcp-k8s-roundtrip/${{ matrix.service.name }} test
 
       - name: Docker build
         if: matrix.service.changed == 'true'
@@ -92,13 +95,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: Build all TypeScript
-        run: npm run build
+        run: yarn build
 
       - name: Build Docker images
         run: make build

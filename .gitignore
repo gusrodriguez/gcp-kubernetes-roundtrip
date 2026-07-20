@@ -27,3 +27,6 @@ infra/Pulumi.*.yaml
 
 # Test coverage
 coverage/
+
+# Yarn
+.yarn/*

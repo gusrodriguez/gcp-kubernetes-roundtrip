@@ -37,7 +37,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -52,10 +54,10 @@ jobs:
         run: gcloud auth configure-docker ${{ env.AR_LOCATION }}-docker.pkg.dev
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --immutable
 
       - name: Build TypeScript
-        run: npm run build
+        run: yarn build
 
       - name: Build, tag, and push images
         run: |
