@@ -17,7 +17,6 @@ export async function startConsumer(nc: NatsConnection): Promise<void> {
   const jsm: JetStreamManager = await nc.jetstreamManager();
   const js: JetStreamClient = nc.jetstream();
 
-  // Ensure durable consumer exists
   const consumerConfig: Partial<ConsumerConfig> = {
     durable_name: 'processing-service',
     ack_policy: AckPolicy.Explicit,
@@ -47,10 +46,8 @@ export async function startConsumer(nc: NatsConnection): Promise<void> {
     try {
       log.info({ orderId: data.orderId, subject: msg.subject }, 'Processing order');
 
-      // Simulate light work
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // Check for poison messages (item starts with "POISON")
       if (data.item && data.item.startsWith('POISON')) {
         throw new Error(`Poison message: cannot process item "${data.item}"`);
       }

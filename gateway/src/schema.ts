@@ -4,11 +4,6 @@ import * as grpcClient from './grpc-client';
 import { childLogger } from './logger';
 import { graphqlRequestsTotal, graphqlRequestDuration } from './metrics';
 
-// graphql-yoga chosen over Apollo Server: lighter, built on Web Standards (fetch API),
-// first-class Envelop plugin system for cross-cutting concerns, and excellent TypeScript
-// support. Apollo's federation and managed gateway features add weight without value
-// for a single-service GraphQL edge.
-
 export const schema = createSchema({
   typeDefs: /* GraphQL */ `
     type Order {
@@ -50,9 +45,11 @@ export const schema = createSchema({
         try {
           const result = await grpcClient.getOrder(args.id);
           graphqlRequestsTotal.inc({ operation: 'order', status: 'ok' });
+
           return result;
         } catch (err) {
           graphqlRequestsTotal.inc({ operation: 'order', status: 'error' });
+
           throw err;
         } finally {
           end();
@@ -63,9 +60,11 @@ export const schema = createSchema({
         try {
           const result = await grpcClient.listOrders(args.limit || 50);
           graphqlRequestsTotal.inc({ operation: 'orders', status: 'ok' });
+
           return result.orders;
         } catch (err) {
           graphqlRequestsTotal.inc({ operation: 'orders', status: 'error' });
+
           throw err;
         } finally {
           end();
@@ -83,10 +82,12 @@ export const schema = createSchema({
           const result = await grpcClient.submitOrder(args.input, correlationId);
           graphqlRequestsTotal.inc({ operation: 'submitOrder', status: 'ok' });
           log.info({ orderId: result.orderId, status: result.status }, 'Order submitted');
+
           return result;
         } catch (err) {
           graphqlRequestsTotal.inc({ operation: 'submitOrder', status: 'error' });
           log.error({ err }, 'submitOrder failed');
+
           throw err;
         } finally {
           end();

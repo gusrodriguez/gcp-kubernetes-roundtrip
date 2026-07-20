@@ -4,19 +4,10 @@ import { dlqTotal } from './metrics';
 
 const sc = StringCodec();
 
-// Dead-letter pattern using JetStream advisories.
-//
-// Unlike Azure Service Bus which has built-in dead-lettering (move to a DLQ
-// sub-queue after N delivery attempts), NATS JetStream gives you the primitives
-// to build it yourself. When a message exceeds maxDeliver attempts, JetStream
-// publishes an advisory to $JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.<stream>.<consumer>.
-// We subscribe to that advisory, fetch the exhausted message by its stream
-// sequence number, and republish it to a DLQ stream for manual inspection.
 export async function startDlqHandler(nc: NatsConnection): Promise<void> {
   const jsm: JetStreamManager = await nc.jetstreamManager();
   const js: JetStreamClient = nc.jetstream();
 
-  // Ensure DLQ stream exists
   try {
     await jsm.streams.info('DLQ');
   } catch {
@@ -28,7 +19,6 @@ export async function startDlqHandler(nc: NatsConnection): Promise<void> {
     logger.info('Created DLQ stream');
   }
 
-  // Subscribe to max delivery advisories for all consumers on the ORDERS stream
   const advisorySubject = '$JS.EVENT.ADVISORY.CONSUMER.MAX_DELIVERIES.ORDERS.*';
   const sub = nc.subscribe(advisorySubject);
 
@@ -42,12 +32,10 @@ export async function startDlqHandler(nc: NatsConnection): Promise<void> {
 
       logger.warn({ streamSeq, stream, advisory }, 'Max deliveries exceeded, moving to DLQ');
 
-      // Fetch the original message by stream sequence
       const jsm2 = await nc.jetstreamManager();
       const originalMsg = await jsm2.streams.getMessage(stream, { seq: streamSeq });
 
       if (originalMsg) {
-        // Republish to DLQ stream with original data and headers
         await js.publish('dlq.orders', originalMsg.data, {
           headers: originalMsg.header || undefined,
         });

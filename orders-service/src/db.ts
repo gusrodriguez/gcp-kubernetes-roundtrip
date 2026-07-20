@@ -1,9 +1,6 @@
 import { Pool } from 'pg';
 import { logger } from './logger';
 
-// Long-lived connection pool — the serverfull luxury. Unlike serverless functions
-// that must establish (and often exhaust) connections on every cold start, this pool
-// stays warm for the lifetime of the process, amortising connection setup cost to zero.
 const pool = new Pool({
   host: process.env.PGHOST || 'localhost',
   port: parseInt(process.env.PGPORT || '5432', 10),

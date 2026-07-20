@@ -13,7 +13,7 @@ End-to-end event-driven microservices on Kubernetes — the **containerized** co
 | Database               | Cosmos DB (managed)                                                                      | Postgres StatefulSet (self-hosted)   |
 | Dead-letter queue      | Built-in (one config flag)                                                               | Built from primitives (advisories)   |
 | Observability          | Application Insights (automatic)                                                         | Prometheus + Grafana (manual)        |
-| Connection pooling     | N/A (cold starts per invocation)                                                         | Long-lived pools (serverfull luxury) |
+| Connection pooling     | N/A (cold starts per invocation)                                                         | Long-lived pools                     |
 | CI end-to-end test     | Requires live Azure resources                                                            | Fully local in kind (zero cost)      |
 | Infrastructure-as-code | Pulumi → Azure                                                                           | Pulumi → GCP                         |
 | External API           | HTTP triggers (REST)                                                                     | GraphQL (graphql-yoga)               |
@@ -63,6 +63,7 @@ The correlation ID travels: GraphQL request → gRPC metadata (`x-correlation-id
 ### GraphQL at the edge, gRPC inside — [`gateway/`](gateway/), [`proto/`](proto/)
 
 GraphQL serves the external API: flexible queries, self-documenting schema, single ingress point. Internal service-to-service communication uses gRPC: typed contracts from `.proto` files and efficient binary serialization.
+Graphql-yoga chosen over Apollo Server: lighter, built on Web Standards (fetch API)
 
 ### Sync (gRPC) vs async (NATS) boundaries — [`orders-service/`](orders-service/)
 

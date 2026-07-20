@@ -22,6 +22,7 @@ function toProtoOrder(row: OrderRow) {
 
 function getCorrelationId(metadata: grpc.Metadata): string {
   const values = metadata.get('x-correlation-id');
+
   return (values[0] as string) || uuid();
 }
 
@@ -40,6 +41,7 @@ const handlers = {
       if (errors.length > 0) {
         grpcRequestsTotal.inc({ method: 'Submit', status: 'INVALID_ARGUMENT' });
         end();
+
         return callback({
           code: grpc.status.INVALID_ARGUMENT,
           message: errors.map((e) => `${e.field}: ${e.message}`).join('; '),
@@ -80,6 +82,7 @@ const handlers = {
       if (!row) {
         grpcRequestsTotal.inc({ method: 'Get', status: 'NOT_FOUND' });
         end();
+
         return callback({ code: grpc.status.NOT_FOUND, message: 'Order not found' });
       }
       grpcRequestsTotal.inc({ method: 'Get', status: 'OK' });

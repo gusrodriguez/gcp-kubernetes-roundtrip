@@ -13,7 +13,6 @@ export async function connectNats(): Promise<void> {
 
   const jsm: JetStreamManager = await nc.jetstreamManager();
 
-  // Ensure ORDERS stream exists (subjects: orders.*, file storage)
   try {
     await jsm.streams.info('ORDERS');
     logger.info('ORDERS stream already exists');
@@ -26,7 +25,6 @@ export async function connectNats(): Promise<void> {
     logger.info('Created ORDERS stream');
   }
 
-  // Ensure DLQ stream exists
   try {
     await jsm.streams.info('DLQ');
     logger.info('DLQ stream already exists');

@@ -14,12 +14,10 @@ async function main() {
 
   const metricsServer = startMetricsServer(METRICS_PORT);
 
-  // Start DLQ handler alongside the main consumer
   startDlqHandler(nc).catch((err) => {
     logger.error({ err }, 'DLQ handler crashed');
   });
 
-  // Start the main consumer (blocks until connection closes)
   await startConsumer(nc);
 
   async function shutdown() {
