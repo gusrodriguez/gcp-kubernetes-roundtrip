@@ -163,7 +163,6 @@ gcloud container clusters resize roundtrip-cluster --zone us-central1-a --num-no
 - **Zonal control plane**: free (GKE free tier)
 - **Nodes**: billed only while scaled up (~$0.03/hr per e2-medium)
 - **Everything else** (NATS, Postgres, Prometheus, Grafana): runs in-cluster, no additional GCP charges
-- **Teardown**: `pulumi destroy` removes all resources
 
 ### Teardown
 
