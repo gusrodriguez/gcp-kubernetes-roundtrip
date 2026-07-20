@@ -2,7 +2,11 @@
 
 [![CI](https://github.com/gusrodriguez/gcp-kubernetes-roundtrip/actions/workflows/ci.yml/badge.svg)](https://github.com/gusrodriguez/gcp-kubernetes-roundtrip/actions/workflows/ci.yml)
 
-End-to-end event-driven microservices on Kubernetes — the **containerized** counterpart to [`azure-serverless-roundtrip`](https://github.com/gusrodriguez/azure-serverless-roundtrip). Both repos implement the same architectural pattern (HTTP → message broker → async consumer → database, with correlation IDs, DLQ handling, and observability) but with opposite infrastructure philosophies. The serverless version uses Azure Functions, Service Bus, and Cosmos DB — fully managed, pay-per-invocation, zero operational ownership. This one runs long-lived processes, an in-cluster message broker, self-hosted Postgres, connection pools, and self-managed observability.
+A complete, deployable reference architecture on GCP demonstrating an end-to-end event-driven flow on Kubernetes: HTTP request, message broker, asynchronous consumer, and database, with correlation IDs, DLQ handling, and observability.
+
+Its counterpart, [`azure-serverless-roundtrip`](https://github.com/gusrodriguez/azure-serverless-roundtrip), implements the same architectural pattern using a different infrastructure philosophy.
+
+The goal is to showcase long-running containers, persistent processes, and self-managed components, including an in-cluster message broker, Postgres, connection pools, and observability. This provides greater control over runtime behavior and infrastructure, more flexibility in how components are selected and configured, and continuously available capacity. Provisioned resources make costs more predictable within a given capacity, but they continue to incur costs during periods of low or no usage. Other trade-offs include higher operational responsibility and more components to maintain.
 
 ### Serverless vs Containerized at a glance
 
@@ -19,6 +23,10 @@ End-to-end event-driven microservices on Kubernetes — the **containerized** co
 | External API           | HTTP triggers (REST)                                                                     | GraphQL (graphql-yoga)               |
 | Internal communication | Service Bus queue trigger                                                                | gRPC + NATS pub/sub                  |
 
+## The round trip
+
+A `submitOrder` GraphQL mutation returns `{ orderId, correlationId, status: "pending" }` immediately; the order travels gateway → gRPC → Postgres insert → `orders.created` event on JetStream → durable consumer → `status: processed`. The consumer acks only after the DB write succeeds. On the failure path, `maxDeliver: 5` exhaustion triggers a JetStream advisory, and the DLQ handler fetches the original message by stream sequence and republishes it to the `DLQ` stream.
+
 ```mermaid
 graph TD
     Internet([Internet]) -->|GraphQL| GW[Gateway]
@@ -33,10 +41,6 @@ graph TD
     PROM -->|scrape /metrics| PS
     PROM --> GRAF[Grafana]
 ```
-
-## The round trip
-
-A `submitOrder` GraphQL mutation returns `{ orderId, correlationId, status: "pending" }` immediately; the order travels gateway → gRPC → Postgres insert → `orders.created` event on JetStream → durable consumer → `status: processed`. The consumer acks only after the DB write succeeds. On the failure path, `maxDeliver: 5` exhaustion triggers a JetStream advisory, and the DLQ handler fetches the original message by stream sequence and republishes it to the `DLQ` stream.
 
 ### Following a correlation ID
 
@@ -172,7 +176,7 @@ cd infra
 pulumi destroy
 ```
 
-## Project structure
+### Repo structure
 
 ```
 gateway/               # GraphQL service (graphql-yoga)
